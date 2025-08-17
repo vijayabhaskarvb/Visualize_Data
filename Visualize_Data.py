@@ -19,7 +19,7 @@ uploaded_file = st.sidebar.file_uploader("Upload your file", type=["csv", "xlsx"
 if uploaded_file is not None:
     # Check file type and read accordingly
     if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
+        df = pd.read_csv(uploaded_file, encoding='ISO-8859-1')
     else:
         df = pd.read_excel(uploaded_file)
 
@@ -170,3 +170,4 @@ if uploaded_file is not None:
 
 else:
     st.info("Upload a CSV or Excel file to start exploring!")
+
