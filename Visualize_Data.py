@@ -10,33 +10,6 @@ st.set_page_config(page_title="Data Visualizer")
 # Title
 st.title("Data Visualizer")
 
-# Theme Toggle
-theme = st.sidebar.radio("Select Theme", ["Dark", "White"])
-if theme == "Dark":
-    st.markdown("""
-        <style>
-        body, .stApp {
-            background-color: #1e1e1e;
-            color: white;
-        }
-        .stDataFrame div {
-            color: white !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-else:
-    st.markdown("""
-        <style>
-        body, .stApp {
-            background-color: white;
-            color: black;
-        }
-        .stDataFrame div {
-            color: black !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
 # Store uploaded datasets in session
 if "datasets" not in st.session_state:
     st.session_state.datasets = {}
@@ -82,8 +55,16 @@ if st.session_state.datasets:
         dataset = dataset.dropna(subset=['Invoice Date'])
         min_date = dataset['Invoice Date'].min().date()
         max_date = dataset['Invoice Date'].max().date()
-        date_range = st.sidebar.slider("Select Date Range", min_value=min_date, max_value=max_date, value=(min_date, max_date))
-        dataset = dataset[(dataset['Invoice Date'].dt.date >= date_range[0]) & (dataset['Invoice Date'].dt.date <= date_range[1])]
+        date_range = st.sidebar.slider(
+            "Select Date Range",
+            min_value=min_date,
+            max_value=max_date,
+            value=(min_date, max_date)
+        )
+        dataset = dataset[
+            (dataset['Invoice Date'].dt.date >= date_range[0]) &
+            (dataset['Invoice Date'].dt.date <= date_range[1])
+        ]
 
     # Grouping
     group_col = st.sidebar.selectbox("Group By", options=["None"] + columns)
@@ -97,7 +78,10 @@ if st.session_state.datasets:
 
     # Sidebar: Chart selection
     st.sidebar.header("Chart Settings")
-    chart_type = st.sidebar.radio("Select a Chart Type", ["Bar Chart", "Line Plot", "Pie Chart", "Histogram", "Box Plot", "Heatmap"])
+    chart_type = st.sidebar.radio(
+        "Select a Chart Type",
+        ["Bar Chart", "Line Plot", "Pie Chart", "Histogram", "Box Plot", "Heatmap"]
+    )
 
     st.subheader(f"{chart_type}")
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -112,10 +96,16 @@ if st.session_state.datasets:
 
     # BAR CHART
     elif chart_type == "Bar Chart":
-        selected_bar_col = st.selectbox("Select a column to aggregate", numeric_cols)
+        selected_bar_col = st.selectbox("Select a column for Bar Chart", columns)
         if selected_bar_col:
-            bar_data = dataset[selected_bar_col].value_counts().head(10)
-            st.bar_chart(bar_data)
+            bar_data = dataset[selected_bar_col].value_counts().head(10).reset_index()
+            bar_data.columns = [selected_bar_col, "Count"]
+
+            # Clean category labels to avoid errors like " 0"
+            bar_data[selected_bar_col] = bar_data[selected_bar_col].astype(str).str.strip()
+
+            # Use only numeric values for plotting
+            st.bar_chart(bar_data.set_index(selected_bar_col)["Count"])
 
     # HISTOGRAM
     elif chart_type == "Histogram":
@@ -143,7 +133,12 @@ if st.session_state.datasets:
             if selected_cat_col in dataset.columns and selected_num_col in dataset.columns:
                 pie_data = dataset.groupby(selected_cat_col)[selected_num_col].sum()
                 fig4, ax4 = plt.subplots()
-                ax4.pie(pie_data, labels=pie_data.index, autopct='%1.1f%%', startangle=90)
+                ax4.pie(
+                    pie_data,
+                    labels=pie_data.index,
+                    autopct='%1.1f%%',
+                    startangle=90
+                )
                 ax4.axis('equal')
                 st.pyplot(fig4)
         else:
@@ -162,10 +157,20 @@ if st.session_state.datasets:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.download_button("Download as Excel", data=excel_data, file_name="Processed_Data.xlsx", mime="application/vnd.ms-excel")
+        st.download_button(
+            "Download as Excel",
+            data=excel_data,
+            file_name="Processed_Data.xlsx",
+            mime="application/vnd.ms-excel"
+        )
     with col2:
         csv_data = dataset.to_csv(index=False).encode('utf-8')
-        st.download_button("Download as CSV", data=csv_data, file_name="Processed_Data.csv", mime='text/csv')
+        st.download_button(
+            "Download as CSV",
+            data=csv_data,
+            file_name="Processed_Data.csv",
+            mime='text/csv'
+        )
 
 else:
     st.warning("Please upload a dataset to begin.")
